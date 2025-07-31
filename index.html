@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8" />
+<head>
+  <title>Leaflet Mapa Patrimonio Cultural</title>
+  <!-- Script de Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+  <!-- Hoja de estilos de Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+  <style>
+    #mapa {
+      width: 90%;
+      height: 600px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 style="font-size: 32px; color:#0000FF; text-align: center">Mapa Patrimonio Cultural Cartagena de Indias</h1>
+    <p style="font-size: 20px; color:#00FFFF; text-align: center">Master Universitario en Geotecnologias Cartograficas en Ingenieria y Arquitectura</p>
+    <p style="font-size: 20px; color:#00FFFF; text-align: center">Diana L. Sierra E.</p>
+  </header>
+
+  <div id="mapa"></div>
+  
+  <script>
+    function getColor(d) {
+      return d > 10 ? '#800026' :
+             d > 5 ? '#BD0026' :
+             d > 3 ? '#E31A1C' :
+             d > 2 ? '#FC4E2A' :
+             d > 1 ? '#FD8D3C' :
+             d > 0.5 ? '#FEB24C' :
+             d > 0.25 ? '#FED976' :
+                        '#FFEDA0';
+    }
+
+    function style(feature) {
+      return {
+        fillColor: getColor(feature.properties.ID_1),
+        weight: 2,
+        opacity: 1,
+        color: 'black',
+        fillOpacity: 0.7
+      };
+    }
+
+    function roadStyle(feature) {
+      return {
+        color: '#FFFF00', // GRIS para carreteras
+        weight: 1,
+        opacity: 0.8
+      };
+    }
+
+    var osmLink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+    var osmUrl = 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    var osmAttrib = '&copy; ' + osmLink + ' Contributors';
+    var osmMap = L.tileLayer(osmUrl, { attribution: osmAttrib });
+    var mimapa = L.map('mapa', { measureControl: true, maxZoom: 20, center: new L.LatLng(10.427105, -75.545097), zoom: 10 });
+    osmMap.addTo(mimapa);
+    
+    var capasbase = {
+      "Mapa OpenStreetMap": osmMap
+    };
+	 
+	//Servicio WMS
+	var Iglesias = L.tileLayer.wms("http://localhost:8080/geoserver/TFM/wms?", {
+		layers: "Iglesias" ,
+		format: "image/png",
+		transparent:true,
+		opacity: 1
+
+ }).addTo(mimapa);	
+	
+  </script>
+</body>
+</html>
