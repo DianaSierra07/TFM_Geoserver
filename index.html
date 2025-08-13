@@ -2,11 +2,12 @@
 <html lang="es">
 <meta charset="utf-8" />
 <head>
-  <title>Leaflet Mapa Patrimonio Cultural</title>
+  <title>IDE Patrimonio Cultural</title>
   <!-- Script de Leaflet -->
   <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
   <!-- Hoja de estilos de Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+  <link rel="stylesheet" href="cartagena-styles.css" />
   <style>
     #mapa {
       width: 90%;
@@ -73,6 +74,114 @@
 
  }).addTo(mimapa);	
 	
+	var TurismoShp = L.tileLayer.wms("http://localhost:8080/geoserver/TFM/wms?", {
+		layers: "TurismoShp" ,
+		format: "image/png",
+		transparent:true,
+		opacity: 1
+
+ }).addTo(mimapa);	
+ 
+ 	var ErosionCostera = L.tileLayer.wms("http://localhost:8080/geoserver/TFM/wms?", {
+		layers: "ErosionCostera" ,
+		format: "image/png",
+		transparent:true,
+		opacity: 1
+
+ }).addTo(mimapa);	
+	
+	
+	
+	
+// Evento click para obtener datos vía WFS filtrando por bounding box alrededor del clic
+  map.on('click', function(e) {
+    var tol = 0.0005; // Tolerancia en grados (~50m en EPSG:4326)
+    var minx = e.latlng.lng - tol;
+    var miny = e.latlng.lat - tol;
+    var maxx = e.latlng.lng + tol;
+    var maxy = e.latlng.lat + tol;
+
+    var url = "http://localhost:8080/geoserver/TFM/ows?service=WFS&version=1.0.0&request=GetFeature" +
+              "&typeName=TFM:Iglesias" +
+              "&outputFormat=application/json" +
+              "&bbox=" + minx + "," + miny + "," + maxx + "," + maxy + ",EPSG:4326";
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.features.length > 0) {
+          var props = data.features[0].properties;
+          var info = "<b>Información de la iglesia:</b><br>";
+          for (var key in props) {
+            info += key + ": " + props[key] + "<br>";
+          }
+          L.popup()
+            .setLatLng(e.latlng)
+            .setContent(info)
+            .openOn(map);
+        } else {
+          L.popup()
+            .setLatLng(e.latlng)
+            .setContent("No hay datos en este punto.")
+            .openOn(map);
+        }
+      })
+      .catch(err => console.error("Error al obtener datos WFS:", err));
+  });
+
+
+
+
+  // ✅ Servicio CSW con impresión en pantalla
+  const cswUrl = 'http://localhost:8080/geoserver/csw'; // Cambia si es GeoNetwork
+
+  const cswRequest = `
+    <GetRecords
+      service="CSW"
+      version="2.0.2"
+      resultType="results"
+      outputFormat="application/xml"
+      outputSchema="http://www.opengis.net/cat/csw/2.0.2"
+      xmlns="http://www.opengis.net/cat/csw/2.0.2"
+      xmlns:ogc="http://www.opengis.net/ogc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.opengis.net/cat/csw/2.0.2 
+        http://schemas.opengis.net/csw/2.0.2/CSW-discovery.xsd">
+      <Query typeNames="csw:Record">
+        <ElementSetName>summary</ElementSetName>
+        <Constraint version="1.1.0">
+          <ogc:Filter>
+            <ogc:PropertyIsLike wildCard="%" singleChar="_" escapeChar="\\">
+              <ogc:PropertyName>csw:AnyText</ogc:PropertyName>
+              <ogc:Literal>%</ogc:Literal>
+            </ogc:PropertyIsLike>
+          </ogc:Filter>
+        </Constraint>
+      </Query>
+    </GetRecords>`;
+
+  fetch(cswUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/xml' },
+    body: cswRequest
+  })
+    .then(response => response.text())
+    .then(text => {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'application/xml');
+      const titles = xml.getElementsByTagName('dc:title');
+      const lista = document.createElement("ul");
+      lista.innerHTML = "<h3>Capas publicadas (desde CSW):</h3>";
+      for (let i = 0; i < titles.length; i++) {
+        const li = document.createElement("li");
+        li.textContent = titles[i].textContent;
+        lista.appendChild(li);
+      }
+      document.body.appendChild(lista);
+    });
+</script>
+
   </script>
 </body>
 </html>
+
